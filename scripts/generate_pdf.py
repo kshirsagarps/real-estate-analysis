@@ -141,7 +141,7 @@ def generate_pdf_report(data: Dict[str, Any], output_path: str = "PROPERTY-REPOR
     story.append(Paragraph("Category Score Breakdown", h2_style))
     breakdown = data.get("breakdown", {})
     breakdown_data = [
-        [Paragraph("<b>Dimension</b>", body_style), Paragraph("<b>Weight</b>", body_style), Paragraph("<b>Score (0-100)</b>", body_style)],
+        [Paragraph("Dimension", table_header_style), Paragraph("Weight", table_header_style), Paragraph("Score (0-100)", table_header_style)],
         [Paragraph("Value & Comparable Sales", body_style), Paragraph("25%", body_style), Paragraph(str(breakdown.get("value_comps", "-")), body_style)],
         [Paragraph("Income Potential & Cash Flow", body_style), Paragraph("20%", body_style), Paragraph(str(breakdown.get("income_potential", "-")), body_style)],
         [Paragraph("Neighborhood Quality & Safety", body_style), Paragraph("20%", body_style), Paragraph(str(breakdown.get("neighborhood_quality", "-")), body_style)],
@@ -150,7 +150,7 @@ def generate_pdf_report(data: Dict[str, Any], output_path: str = "PROPERTY-REPOR
     ]
     t_bd = Table(breakdown_data, colWidths=[240, 100, 164])
     t_bd.setStyle(TableStyle([
-        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#1E293B')),
+        ('BACKGROUND', (0,0), (-1,0), colors.black),
         ('TEXTCOLOR', (0,0), (-1,0), colors.white),
         ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#CBD5E1')),
         ('PADDING', (0,0), (-1,-1), 6),
@@ -162,7 +162,7 @@ def generate_pdf_report(data: Dict[str, Any], output_path: str = "PROPERTY-REPOR
     story.append(Paragraph("Financial Underwriting Summary", h2_style))
     fin = data.get("financials", {})
     fin_data = [
-        [Paragraph("<b>Metric</b>", body_style), Paragraph("<b>Annual / Value</b>", body_style)],
+        [Paragraph("Metric", table_header_style), Paragraph("Annual / Value", table_header_style)],
         [Paragraph("Gross Potential Rent", body_style), Paragraph(f"${fin.get('gross_rent', 0):,.2f}", body_style)],
         [Paragraph("Effective Gross Income (EGI)", body_style), Paragraph(f"${fin.get('egi', 0):,.2f}", body_style)],
         [Paragraph("Total Operating Expenses", body_style), Paragraph(f"${fin.get('expenses', 0):,.2f}", body_style)],
@@ -172,7 +172,8 @@ def generate_pdf_report(data: Dict[str, Any], output_path: str = "PROPERTY-REPOR
     ]
     t_fin = Table(fin_data, colWidths=[250, 254])
     t_fin.setStyle(TableStyle([
-        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#0F172A')),
+        ('BACKGROUND', (0,0), (-1,0), colors.black),
+        ('TEXTCOLOR', (0,0), (-1,0), colors.white),
         ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#CBD5E1')),
         ('PADDING', (0,0), (-1,-1), 6),
     ]))
@@ -183,13 +184,24 @@ def generate_pdf_report(data: Dict[str, Any], output_path: str = "PROPERTY-REPOR
     cap_matrix = data.get("cap_matrix", {})
     if cap_matrix:
         story.append(Paragraph("Offer Price & Levered Cash Flow Matrix (8.0% to 12.0% Cap Rate)", h2_style))
+        
+        table_header_style = ParagraphStyle(
+            'TableHeaderWhite',
+            parent=styles['Normal'],
+            fontName='Helvetica-Bold',
+            fontSize=9,
+            leading=12,
+            textColor=colors.white
+        )
+        
         matrix_rows = [[
-            Paragraph("<b>Target Cap Rate</b>", body_style),
-            Paragraph("<b>Offer Price</b>", body_style),
-            Paragraph("<b>20% Down</b>", body_style),
-            Paragraph("<b>Monthly Debt</b>", body_style),
-            Paragraph("<b>Net Cash Flow</b>", body_style),
-            Paragraph("<b>CoC Return</b>", body_style)
+            Paragraph("Target Cap", table_header_style),
+            Paragraph("Offer Price", table_header_style),
+            Paragraph("Cap Rate", table_header_style),
+            Paragraph("20% Down", table_header_style),
+            Paragraph("Monthly Debt", table_header_style),
+            Paragraph("Net Cash Flow", table_header_style),
+            Paragraph("CoC Return", table_header_style)
         ]]
         for cap_str, info in cap_matrix.items():
             if isinstance(info, dict):
@@ -208,16 +220,19 @@ def generate_pdf_report(data: Dict[str, Any], output_path: str = "PROPERTY-REPOR
             matrix_rows.append([
                 Paragraph(f"<b>{cap_str}</b>", body_style),
                 Paragraph(f"<b>${offer_val:,.0f}</b>", body_style),
+                Paragraph(f"<b>{cap_str}</b>", body_style),
                 Paragraph(f"${down_val:,.0f}", body_style),
                 Paragraph(f"${m_debt:,.0f}/mo", body_style),
                 Paragraph(f"${ann_cf:,.0f}/yr", body_style),
                 Paragraph(f"<b>{coc:.1f}%</b>", body_style)
             ])
-        t_matrix = Table(matrix_rows, colWidths=[80, 90, 80, 85, 90, 79])
+        t_matrix = Table(matrix_rows, colWidths=[65, 75, 60, 70, 80, 80, 74])
         t_matrix.setStyle(TableStyle([
-            ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#1E293B')),
+            ('BACKGROUND', (0,0), (-1,0), colors.black),
+            ('TEXTCOLOR', (0,0), (-1,0), colors.white),
             ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#CBD5E1')),
             ('PADDING', (0,0), (-1,-1), 5),
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
         ]))
         story.append(t_matrix)
         story.append(Spacer(1, 15))
