@@ -43,9 +43,9 @@ def test_t12_anomaly_detection_and_normalization():
     # Normalized EGI = 100k - 5k = 95k
     # Normalized Mgmt = 5% of 95k = $4,750
     # Normalized CapEx = 5 * $300 = $1,500
-    # Total Normalized Exp = 7500 + 4000 + 2000 + 4750 + 5000 + 1500 = 29,750
-    # Normalized NOI = 95,000 - 29,750 = 65,250
-    assert res["normalized_noi"] == 65250.0
+    # Total Normalized Exp = 7500 + 4000 + 2000 + 4750 + 5000 + 1500 = 24,750
+    # Normalized NOI = 95,000 - 24,750 = 70,250
+    assert res["normalized_noi"] == 70250.0
 
     # Anomalies detected list should contain flags for vacancy, taxes, mgmt, capex
     assert len(res["anomalies_detected"]) >= 3
