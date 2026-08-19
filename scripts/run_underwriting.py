@@ -154,8 +154,37 @@ def run_underwriting():
     print("UNDERWRITING STRESS TEST:")
     print(f"  • Base Cash Flow:          ${stress_res['base_scenario']['monthly_cash_flow']:,.2f}/mo (DSCR: {stress_res['base_scenario']['dscr']})")
     print(f"  • Post-Acquisition Flow:   ${stress_res['post_acquisition_scenario']['monthly_cash_flow']:,.2f}/mo (DSCR: {stress_res['post_acquisition_scenario']['dscr']})")
-    print(f"  • Stress Scenario Flow:     ${stress_res['stress_scenario']['monthly_cash_flow']:,.2f}/mo (DSCR: {stress_res['stress_scenario']['dscr']})")
-    print("=" * 75)
+    # Build PDF Data
+    score_res = compute_property_score(85, 88, 68, 82, 78)
+    pdf_data = {
+        'address': '273-275 New Hancock Street, Wilkes-Barre, PA 18702',
+        'score': score_res['composite_score'],
+        'grade': score_res['grade'],
+        'signal': score_res['signal'],
+        'fmv': sales_comp_fmv,
+        'mao': offer_res['offer_price_bands']['maximum_rational_offer'],
+        'breakdown': score_res['breakdown'],
+        'financials': {
+            'gross_rent': 73908.0,
+            'egi': t12_res['normalized_egi'],
+            'expenses': t12_res['expenses']['normalized_total_expenses'],
+            'noi': normalized_noi,
+            'cap_rate': (normalized_noi / 500000.0) * 100.0,
+            'coc_return': offer_res['recommended_offer_underwriting']['coc_return_pct']
+        },
+        'cap_matrix': offer_res['offer_price_bands'],
+        'insights': [
+            f"Data Provenance & Offer Confidence: {conf_res['confidence_level']} ({conf_res['offer_confidence_score']}/100).",
+            f"Valuation Dispersion (CV): {comp_res['valuation_dispersion_cv']} | Warning: {comp_res['safeguard_warning']}",
+            f"Normalized NOI: ${normalized_noi:,.2f}/yr (Seller NOI of ${t12_res['seller_noi']:,.2f}/yr was normalized for post-sale tax reassessment of $7,500/yr, 5% vacancy, CapEx reserves, landlord utilities).",
+            f"Three Values: Sales Comp FMV = ${sales_comp_fmv:,.2f} | Income Value = ${offer_res['three_values']['income_approach_value']:,.2f} | Investor Max Value = ${offer_res['three_values']['investor_max_value']:,.2f}.",
+            f"Offer Bands: Opening: ${offer_res['offer_price_bands']['opening_offer']:,.2f} | Recommended: ${offer_res['offer_price_bands']['recommended_offer']:,.2f} | Max Rational: ${offer_res['offer_price_bands']['maximum_rational_offer']:,.2f} | WALK-AWAY: ${offer_res['offer_price_bands']['walk_away_price']:,.2f}.",
+            f"Stress Test: Base Flow = ${stress_res['base_scenario']['monthly_cash_flow']:,.2f}/mo (DSCR {stress_res['base_scenario']['dscr']}) | Post-Acquisition Flow = ${stress_res['post_acquisition_scenario']['monthly_cash_flow']:,.2f}/mo (DSCR {stress_res['post_acquisition_scenario']['dscr']}) | Stress Flow = ${stress_res['stress_scenario']['monthly_cash_flow']:,.2f}/mo (DSCR {stress_res['stress_scenario']['dscr']})."
+        ]
+    }
+
+    pdf_path = generate_pdf_report(pdf_data, '273_NEW_HANCOCK_PHASE2_REPORT.pdf')
+    print(f"PDF Report generated at: {pdf_path}")
 
 if __name__ == "__main__":
     run_underwriting()

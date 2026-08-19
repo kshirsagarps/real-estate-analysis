@@ -37,8 +37,8 @@ class NumberedCanvas(canvas.Canvas):
 
     def draw_page_number(self, page_count):
         self.saveState()
-        self.setFont("Helvetica", 9)
-        self.setFillColor(colors.HexColor("#64748B"))
+        self.setFont("Helvetica-Bold", 8)
+        self.setFillColor(colors.HexColor("#475569"))
         
         # Header
         self.drawString(54, 750, "AI REAL ESTATE RESEARCH ENGINE — CONFIDENTIAL REPORT")
@@ -70,41 +70,49 @@ def generate_pdf_report(data: Dict[str, Any], output_path: str = "PROPERTY-REPOR
         'DocTitle',
         parent=styles['Heading1'],
         fontName='Helvetica-Bold',
-        fontSize=24,
-        leading=28,
-        textColor=colors.HexColor('#1E293B'),
-        spaceAfter=6
+        fontSize=22,
+        leading=26,
+        textColor=colors.HexColor('#0F172A'),
+        spaceAfter=4
     )
 
     subtitle_style = ParagraphStyle(
         'DocSubtitle',
         parent=styles['Normal'],
         fontName='Helvetica',
-        fontSize=12,
-        leading=16,
+        fontSize=11,
+        leading=15,
         textColor=colors.HexColor('#475569'),
-        spaceAfter=15
+        spaceAfter=12
     )
 
     h2_style = ParagraphStyle(
         'SectionHeader',
         parent=styles['Heading2'],
         fontName='Helvetica-Bold',
-        fontSize=14,
-        leading=18,
+        fontSize=13,
+        leading=17,
         textColor=colors.HexColor('#0F172A'),
-        spaceBefore=12,
-        spaceAfter=8
+        spaceBefore=10,
+        spaceAfter=6
+    )
+
+    table_header_style = ParagraphStyle(
+        'TableHeaderWhite',
+        parent=styles['Normal'],
+        fontName='Helvetica-Bold',
+        fontSize=9,
+        leading=12,
+        textColor=colors.white
     )
 
     body_style = ParagraphStyle(
         'BodyDark',
         parent=styles['Normal'],
         fontName='Helvetica',
-        fontSize=10,
-        leading=14,
-        textColor=colors.HexColor('#334155'),
-        spaceAfter=8
+        fontSize=9,
+        leading=13,
+        textColor=colors.HexColor('#1E293B')
     )
 
     story = []
@@ -116,26 +124,26 @@ def generate_pdf_report(data: Dict[str, Any], output_path: str = "PROPERTY-REPOR
     signal = data.get("signal", "N/A")
 
     story.append(Paragraph(address, title_style))
-    story.append(Paragraph(f"Comprehensive Investment Underwriting & Valuation Report", subtitle_style))
-    story.append(HRFlowable(width="100%", thickness=1.5, color=colors.HexColor('#2563EB'), spaceAfter=15))
+    story.append(Paragraph("Comprehensive Investment Underwriting & Valuation Report", subtitle_style))
+    story.append(HRFlowable(width="100%", thickness=1.5, color=colors.HexColor('#2563EB'), spaceAfter=12))
 
     # Executive Summary Card Table
     exec_data = [
         [Paragraph("<b>Composite Property Score</b>", body_style), Paragraph(f"<b>{score} / 100</b>", body_style)],
         [Paragraph("<b>Letter Grade</b>", body_style), Paragraph(f"<b>{grade}</b>", body_style)],
         [Paragraph("<b>Investment Signal</b>", body_style), Paragraph(f"<b>{signal}</b>", body_style)],
-        [Paragraph("<b>Fair Market Value</b>", body_style), Paragraph(f"${data.get('fmv', 0):,.2f}", body_style)],
+        [Paragraph("<b>Fair Market Value (Sales Comps)</b>", body_style), Paragraph(f"${data.get('fmv', 0):,.2f}", body_style)],
         [Paragraph("<b>Maximum Allowable Offer (MAO)</b>", body_style), Paragraph(f"${data.get('mao', 0):,.2f}", body_style)]
     ]
     t_exec = Table(exec_data, colWidths=[200, 304])
     t_exec.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#F8FAFC')),
         ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#E2E8F0')),
-        ('PADDING', (0,0), (-1,-1), 8),
+        ('PADDING', (0,0), (-1,-1), 6),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
     ]))
     story.append(t_exec)
-    story.append(Spacer(1, 15))
+    story.append(Spacer(1, 10))
 
     # Score Category Breakdown Table
     story.append(Paragraph("Category Score Breakdown", h2_style))
@@ -153,21 +161,23 @@ def generate_pdf_report(data: Dict[str, Any], output_path: str = "PROPERTY-REPOR
         ('BACKGROUND', (0,0), (-1,0), colors.black),
         ('TEXTCOLOR', (0,0), (-1,0), colors.white),
         ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#CBD5E1')),
-        ('PADDING', (0,0), (-1,-1), 6),
+        ('PADDING', (0,0), (-1,-1), 5),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
     ]))
     story.append(t_bd)
-    story.append(Spacer(1, 15))
+    story.append(Spacer(1, 10))
 
     # Financial Underwriting Section
     story.append(Paragraph("Financial Underwriting Summary", h2_style))
     fin = data.get("financials", {})
+    fin_noi = fin.get('noi', 0.0)
     fin_data = [
         [Paragraph("Metric", table_header_style), Paragraph("Annual / Value", table_header_style)],
-        [Paragraph("Gross Potential Rent", body_style), Paragraph(f"${fin.get('gross_rent', 0):,.2f}", body_style)],
+        [Paragraph("Gross Potential Rent (GPR)", body_style), Paragraph(f"${fin.get('gross_rent', 0):,.2f}", body_style)],
         [Paragraph("Effective Gross Income (EGI)", body_style), Paragraph(f"${fin.get('egi', 0):,.2f}", body_style)],
         [Paragraph("Total Operating Expenses", body_style), Paragraph(f"${fin.get('expenses', 0):,.2f}", body_style)],
-        [Paragraph("Net Operating Income (NOI)", body_style), Paragraph(f"<b>${fin.get('noi', 0):,.2f}</b>", body_style)],
-        [Paragraph("Cap Rate at Purchase Price", body_style), Paragraph(f"<b>{fin.get('cap_rate', 0):.2f}%</b>", body_style)],
+        [Paragraph("Net Operating Income (NOI)", body_style), Paragraph(f"<b>${fin_noi:,.2f}</b>", body_style)],
+        [Paragraph("Cap Rate at Asking Price ($500k)", body_style), Paragraph(f"<b>{fin.get('cap_rate', 0):.2f}%</b>", body_style)],
         [Paragraph("Cash-on-Cash Return", body_style), Paragraph(f"{fin.get('coc_return', 0):.2f}%", body_style)],
     ]
     t_fin = Table(fin_data, colWidths=[250, 254])
@@ -175,35 +185,44 @@ def generate_pdf_report(data: Dict[str, Any], output_path: str = "PROPERTY-REPOR
         ('BACKGROUND', (0,0), (-1,0), colors.black),
         ('TEXTCOLOR', (0,0), (-1,0), colors.white),
         ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#CBD5E1')),
-        ('PADDING', (0,0), (-1,-1), 6),
+        ('PADDING', (0,0), (-1,-1), 5),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
     ]))
     story.append(t_fin)
-    story.append(Spacer(1, 15))
+    story.append(Spacer(1, 10))
 
-    # Cap Rate Offer Price Matrix (8.0% - 12.0%)
+    # Offer Price Bands & Implied Cap Rates Table
     cap_matrix = data.get("cap_matrix", {})
     if cap_matrix:
-        story.append(Paragraph("Offer Price & Levered Cash Flow Matrix (8.0% to 12.0% Cap Rate)", h2_style))
+        story.append(Paragraph("Offer Price Bands & Implied Cap Rates", h2_style))
         
-        table_header_style = ParagraphStyle(
-            'TableHeaderWhite',
-            parent=styles['Normal'],
-            fontName='Helvetica-Bold',
-            fontSize=9,
-            leading=12,
-            textColor=colors.white
-        )
-        
+        band_labels = {
+            "opening_offer": "Opening Offer",
+            "aggressive_offer": "Opening Offer",
+            "recommended_offer": "Recommended Offer",
+            "maximum_rational_offer": "Max Rational Offer",
+            "walk_away_price": "Walk-Away Price",
+            "market_value_ceiling": "Market Value Ceiling"
+        }
+
         matrix_rows = [[
-            Paragraph("Target Cap", table_header_style),
+            Paragraph("Offer Strategy", table_header_style),
             Paragraph("Offer Price", table_header_style),
-            Paragraph("Cap Rate", table_header_style),
+            Paragraph("Cap Rate %", table_header_style),
             Paragraph("20% Down", table_header_style),
             Paragraph("Monthly Debt", table_header_style),
             Paragraph("Net Cash Flow", table_header_style),
             Paragraph("CoC Return", table_header_style)
         ]]
-        for cap_str, info in cap_matrix.items():
+
+        seen_keys = set()
+        for key, info in cap_matrix.items():
+            if key in seen_keys or key == "aggressive_offer":
+                continue
+            seen_keys.add(key)
+            
+            label = band_labels.get(key, key.replace("_", " ").title())
+            
             if isinstance(info, dict):
                 offer_val = info.get("offer_price", 0.0)
                 down_val = info.get("down_payment", 0.0)
@@ -214,19 +233,22 @@ def generate_pdf_report(data: Dict[str, Any], output_path: str = "PROPERTY-REPOR
                 offer_val = float(info)
                 down_val = offer_val * 0.20
                 m_debt = (offer_val * 0.80) * 0.007753
-                ann_cf = 56825.27 - (m_debt * 12)
-                coc = (ann_cf / (down_val * 1.01)) * 100
+                ann_cf = fin_noi - (m_debt * 12)
+                coc = (ann_cf / (down_val * 1.01)) * 100.0 if down_val > 0 else 0.0
+
+            implied_cap = (fin_noi / offer_val * 100.0) if offer_val > 0 else 0.0
 
             matrix_rows.append([
-                Paragraph(f"<b>{cap_str}</b>", body_style),
+                Paragraph(f"<b>{label}</b>", body_style),
                 Paragraph(f"<b>${offer_val:,.0f}</b>", body_style),
-                Paragraph(f"<b>{cap_str}</b>", body_style),
+                Paragraph(f"<b>{implied_cap:.2f}%</b>", body_style),
                 Paragraph(f"${down_val:,.0f}", body_style),
                 Paragraph(f"${m_debt:,.0f}/mo", body_style),
                 Paragraph(f"${ann_cf:,.0f}/yr", body_style),
                 Paragraph(f"<b>{coc:.1f}%</b>", body_style)
             ])
-        t_matrix = Table(matrix_rows, colWidths=[65, 75, 60, 70, 80, 80, 74])
+
+        t_matrix = Table(matrix_rows, colWidths=[104, 70, 60, 65, 75, 70, 60])
         t_matrix.setStyle(TableStyle([
             ('BACKGROUND', (0,0), (-1,0), colors.black),
             ('TEXTCOLOR', (0,0), (-1,0), colors.white),
@@ -235,46 +257,57 @@ def generate_pdf_report(data: Dict[str, Any], output_path: str = "PROPERTY-REPOR
             ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
         ]))
         story.append(t_matrix)
-        story.append(Spacer(1, 15))
+        story.append(Spacer(1, 10))
 
-    # Subagent Executive Bulletins
+    # Subagent Executive Insights Section
     story.append(Paragraph("Subagent Analysis Insights", h2_style))
-    insights = data.get("insights", [
-        "Comps Agent: Comparable sales in 0.5 mile radius indicate fair valuation.",
-        "Rental Agent: Strong local demand supports $2,400-$2,600 monthly rents.",
-        "Neighborhood Agent: Rated 8/10 for top-tier school district and low crime rate.",
-        "Investment Agent: Buy & Hold yields 8.2% Cash-on-Cash return at target price.",
-        "Market Agent: Market inventory is low (2.1 months), favoring seller leverage."
-    ])
+    insights = data.get("insights", [])
     for item in insights:
-        story.append(Paragraph(f"• {item}", body_style))
+        # Clean formatting
+        clean_item = item.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        story.append(Paragraph(f"• {clean_item}", body_style))
+        story.append(Spacer(1, 2))
 
     doc.build(story, canvasmaker=NumberedCanvas)
     return output_path
 
 if __name__ == "__main__":
     sample_data = {
-        "address": "4509 S Congress Ave, Austin TX 78745",
-        "score": 82.4,
+        "address": "273-275 New Hancock Street, Wilkes-Barre, PA 18702",
+        "score": 83.1,
         "grade": "A",
         "signal": "Buy — favorable fundamentals with manageable risks",
-        "fmv": 525000.0,
-        "mao": 485000.0,
+        "fmv": 519082.92,
+        "mao": 456582.92,
         "breakdown": {
             "value_comps": 85,
-            "income_potential": 78,
-            "neighborhood_quality": 88,
-            "investment_upside": 80,
-            "market_conditions": 82
+            "income_potential": 88,
+            "neighborhood_quality": 68,
+            "investment_upside": 82,
+            "market_conditions": 78
         },
         "financials": {
-            "gross_rent": 38400.0,
-            "egi": 36480.0,
-            "expenses": 14500.0,
-            "noi": 21980.0,
-            "cap_rate": 6.28,
-            "coc_return": 8.15
-        }
+            "gross_rent": 73908.0,
+            "egi": 70212.60,
+            "expenses": 25387.33,
+            "noi": 45746.34,
+            "cap_rate": 9.15,
+            "coc_return": 14.69
+        },
+        "cap_matrix": {
+            "opening_offer": 410924.63,
+            "recommended_offer": 433753.77,
+            "maximum_rational_offer": 456582.92,
+            "walk_away_price": 479412.07,
+            "market_value_ceiling": 538192.24
+        },
+        "insights": [
+            "Data Provenance & Offer Confidence: MEDIUM (75.0/100). Valuation Dispersion CV: 0.037.",
+            "Normalized NOI: $45,746.34/yr (Seller NOI of $59,275.99/yr was normalized for post-sale tax reassessment of $7,500/yr, 5% vacancy, CapEx reserves, and landlord utilities).",
+            "Three Values: Sales Comp FMV = $519,082.92 | Income Value = $538,192.24 | Investor Max Value = $456,582.92.",
+            "Offer Bands: Opening: $410,925 | Recommended: $433,754 | Max Rational: $456,583 | WALK-AWAY: $479,412.",
+            "Stress Test: Base Flow = $1,287.96/mo | Post-Acquisition Flow = $885.99/mo | Downside Stress Flow = $0.26/mo."
+        ]
     }
     out = generate_pdf_report(sample_data, "test_report.pdf")
     print(f"Generated PDF at {out}")
