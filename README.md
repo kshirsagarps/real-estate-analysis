@@ -1,56 +1,56 @@
 # AI Real Estate Research Engine & Financial Underwriter
 
-An autonomous **AI Real Estate Research Engine** built for Gemini and Antigravity. It features **5 parallel subagents**, a **0–100 composite property scoring model**, **T12 financial statement parsing**, **SQLite persistent market memory**, **publication-ready PDF report generation**, and an **automated EVALS evaluation suite**.
+An industrial-grade **AI Real Estate Research & Deterministic Financial Underwriter** built for Gemini and Antigravity. It features **5 parallel subagents**, **6 deterministic Python calculation engines**, **multi-scenario underwriting (`underwrite_offer.py`)**, **T12 anomaly auditing**, **4-tier data provenance**, **publication-ready PDF report generation**, and an **automated 20-test evaluation suite**.
 
 ---
 
-## Features Overview
+## 🏛️ Architecture: AI Discovery + Deterministic Underwriting Pipeline
 
-- **5 Parallel Specialized Subagents**:
-  - [`comps_agent`](agents/comps_agent/README.md): Comparable sales & Fair Market Value.
-  - [`rental_agent`](agents/rental_agent/README.md): Income yield, NOI, Cap Rate, and Cash-on-Cash underwriting.
-  - [`neighborhood_agent`](agents/neighborhood_agent/README.md): School ratings, safety, walkability, and demographics.
-  - [`invest_agent`](agents/invest_agent/README.md): Buy & Hold, BRRRR, Fix & Flip, and Maximum Allowable Offer ($\text{MAO}$).
-  - [`market_agent`](agents/market_agent/README.md): Local inventory, Days on Market (DOM), supply/demand dynamics.
-- **T12 Operating Statement Parser**: Extracts true NOI and line-item operating expenses (`scripts/parse_t12.py`).
-- **Composite Property Score (0–100)**: Letter grades ($A+$ to $F$) and investment recommendation signals (`scripts/score_property.py`).
-- **SQLite Persistent Caching & Memory**: Caches zip code queries (7-day TTL) and retains county tax/insurance rules (`scripts/memory_engine.py`).
-- **Publication-Ready PDF Reports**: Generates professional 6-page PDF property analysis reports (`scripts/generate_pdf.py`).
-- **Automated EVALS Suite**: Test suite verifying underwriting math, parsing accuracy, and scoring bounds (`evals/run_evals.py`).
+```mermaid
+flowchart TD
+    Subagents["AI Agents\n(Comps, Rental, Neighborhood, Investment, Market)"] --> DataJSON["Structured Property JSON\n(Rent Roll, MLS, Assessor Data)"]
+    DataJSON --> Reconciler["Fact Reconciler & 4-Tier Provenance\n(fact_reconciler.py / provenance.py)"]
+    Reconciler --> T12Auditor["T12 Auditor & Tax/Insurance Normalizer\n(t12_auditor.py)"]
+    T12Auditor --> MultiScenario["Multi-Scenario Underwriting Engine\n(underwrite_offer.py)"]
+    MultiScenario --> CompEngine["Deterministic Comp Selection Engine\n(comp_engine.py)"]
+    CompEngine --> OfferOptimizer["Multi-Constraint Offer Optimizer\n(offer_optimizer.py)"]
+    OfferOptimizer --> Output["Reproducible Offer Range & Audit Report\n(Trailing, Stabilized, Stress Test Scenarios)"]
+```
+
+> **Key Rule**: AI Agents discover and summarize property data; **deterministic Python engines** perform all financial calculations, double-counting checks (taxes/insurance), and offer price band optimizations.
 
 ---
 
-## Directory Structure
+## 🛠️ Deterministic Calculation & Audit Engines (`scripts/`)
 
+- [`underwrite_offer.py`](scripts/underwrite_offer.py): **Multi-Scenario Underwriting Engine** computing Trailing T12, Stabilized, and Conservative Stress scenarios. Prevents double-counting taxes/insurance and outputs structured audit warnings JSON.
+- [`comp_engine.py`](scripts/comp_engine.py): **Comp Eligibility Funnel** (filters property type, distance $\le 1.0\text{ mi}$, recency $\le 180\text{ d}$, unit count $\pm 20\%$), similarity scoring (0–100), outlier removal, valuation dispersion (CV/IQR), and weighted FMV.
+- [`offer_optimizer.py`](scripts/offer_optimizer.py): **Three-Value Model** (Comp FMV, Income Value, Investor Max Value), strategy-specific MAOs (Buy-Hold, BRRRR, Flip), **4-Tier Offer Price Bands** (Opening, Recommended, Max Rational, Market Ceiling) & **Hard Walk-Away Price**.
+- [`provenance.py`](scripts/provenance.py): **4-Tier Data Provenance** (Tier 1 Assessor/Deed to Tier 4 AI Web Crawl), observation date tracking, and **Offer Confidence Evaluator** (0–100).
+- [`t12_auditor.py`](scripts/t12_auditor.py): **T12 Anomaly Auditor** (detects missing tax/insurance, zero vacancy, landlord water/electric, and post-sale tax reassessments).
+- [`fact_reconciler.py`](scripts/fact_reconciler.py): **Fact Reconciliation & Conflict Resolution Engine**.
+- [`stress_tester.py`](scripts/stress_tester.py): **Mandatory 3-Scenario Stress Testing Engine**.
+- [`score_property.py`](scripts/score_property.py): **0–100 Composite Scoring & Grade Engine**.
+- [`parse_t12.py`](scripts/parse_t12.py): Financial Statement & T12 Parser.
+- [`memory_engine.py`](scripts/memory_engine.py): SQLite Memory & 7-Day Caching Engine.
+- [`generate_pdf.py`](scripts/generate_pdf.py): ReportLab PDF Report Generator.
+
+---
+
+## 🧪 Automated Benchmark Evaluation Suite (`evals/`)
+
+The repository includes a 20-test automated evaluation suite verifying all underwriting math, comp eligibility filters, offer price bands, and T12 normalization:
+
+```bash
+python3 evals/run_evals.py
 ```
-real-estate-analysis/
-├── .gemini/
-│   └── skills/
-│       └── realestate/
-│           ├── SKILL.md                 # Primary skill definition & routing
-│           └── README.md                # Skill documentation
-├── agents/                              # 5 Specialized Subagents & Guides
-│   ├── comps_agent/                     # Comps Agent & README
-│   ├── rental_agent/                    # Rental Underwriter & README
-│   ├── neighborhood_agent/              # Neighborhood Analyst & README
-│   ├── invest_agent/                    # Investment Strategist & README
-│   └── market_agent/                    # Market Analyst & README
-├── scripts/                             # Core Python Underwriting & Memory Scripts
-│   ├── score_property.py                # 0-100 Scoring & Grade Engine
-│   ├── parse_t12.py                     # Financial Statement & T12 Parser
-│   ├── memory_engine.py                 # SQLite Memory & 7-Day Caching
-│   ├── calibrate.py                     # Prediction vs Actual Calibration
-│   └── generate_pdf.py                  # ReportLab PDF Report Generator
-├── evals/                               # Automated Benchmark Evaluation Suite
-│   ├── test_underwriting_math.py        # Financial math tests
-│   ├── test_t12_parser.py               # T12 parser accuracy tests
-│   ├── test_scoring_engine.py           # Property score tests
-│   ├── test_memory_engine.py            # SQLite cache & memory tests
-│   ├── run_evals.py                     # Master test suite runner
-│   └── README.md                        # EVALS documentation
-├── requirements.txt                     # Project Python dependencies
-└── README.md                            # Master project documentation
-```
+
+- `test_comp_engine.py`: Comp funnel filtering, similarity scoring, and outlier exclusion.
+- `test_offer_optimizer.py`: Three-value model, strategy MAOs, and walk-away thresholds.
+- `test_t12_auditor.py`: Expense normalization, landlord utility inclusion, and tax reassessment.
+- `test_stress_tester.py`: Multi-scenario stress test DSCR and cash flow validations.
+- `test_fact_reconciler.py`: 4-tier provenance resolution and conflict handling.
+- `test_scoring_engine.py`: Property score bounds [0, 100] and letter grade logic.
 
 ---
 
@@ -61,26 +61,27 @@ real-estate-analysis/
 pip3 install -r requirements.txt
 ```
 
-### 2. Run Automated EVALS Suite
+### 2. Run Multi-Scenario Deterministic Underwriter
+```bash
+python3 scripts/underwrite_offer.py
+```
+
+### 3. Run Master Property Underwriting Pipeline
+```bash
+python3 scripts/run_underwriting.py
+```
+
+### 4. Run EVALS Benchmark Suite
 ```bash
 python3 evals/run_evals.py
 ```
 
-### 3. Usage in Antigravity Chat
-- `/realestate analyze <address>` — Full 5-agent parallel property analysis & PDF generation.
-- `/realestate quick <address>` — 60-second property snapshot.
-- `/realestate underwrite <address> --t12 path/to/t12.json` — Deep financial audit with T12 parsing.
-- `/realestate report-pdf` — Build PDF report.
-- `/realestate eval` — Run evaluation benchmark suite.
-
 ---
 
 ## Subagent & Component Documentation
-For detailed guides on each subagent and subsystem, see:
-- 📖 [Comps Agent User Guide](agents/comps_agent/README.md)
-- 📖 [Rental Agent User Guide](agents/rental_agent/README.md)
-- 📖 [Neighborhood Agent User Guide](agents/neighborhood_agent/README.md)
-- 📖 [Investment Agent User Guide](agents/invest_agent/README.md)
-- 📖 [Market Agent User Guide](agents/market_agent/README.md)
-- 📖 [EVALS Framework Guide](evals/README.md)
-- 📖 [Real Estate Skill Guide](.gemini/skills/realestate/README.md)
+- 📖 [Comps Agent Guide](agents/comps_agent/README.md)
+- 📖 [Rental Agent Guide](agents/rental_agent/README.md)
+- 📖 [Neighborhood Agent Guide](agents/neighborhood_agent/README.md)
+- 📖 [Investment Agent Guide](agents/invest_agent/README.md)
+- 📖 [Market Agent Guide](agents/market_agent/README.md)
+- 📖 [EVALS Benchmark Framework Guide](evals/README.md)
