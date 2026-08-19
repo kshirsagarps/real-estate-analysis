@@ -167,7 +167,7 @@ def generate_pdf_report(data: Dict[str, Any], output_path: str = "PROPERTY-REPOR
         [Paragraph("Effective Gross Income (EGI)", body_style), Paragraph(f"${fin.get('egi', 0):,.2f}", body_style)],
         [Paragraph("Total Operating Expenses", body_style), Paragraph(f"${fin.get('expenses', 0):,.2f}", body_style)],
         [Paragraph("Net Operating Income (NOI)", body_style), Paragraph(f"<b>${fin.get('noi', 0):,.2f}</b>", body_style)],
-        [Paragraph("Cap Rate at Purchase Price", body_style), Paragraph(f"{fin.get('cap_rate', 0):.2f}%", body_style)],
+        [Paragraph("Cap Rate at Purchase Price", body_style), Paragraph(f"<b>{fin.get('cap_rate', 0):.2f}%</b>", body_style)],
         [Paragraph("Cash-on-Cash Return", body_style), Paragraph(f"{fin.get('coc_return', 0):.2f}%", body_style)],
     ]
     t_fin = Table(fin_data, colWidths=[250, 254])
@@ -178,6 +178,28 @@ def generate_pdf_report(data: Dict[str, Any], output_path: str = "PROPERTY-REPOR
     ]))
     story.append(t_fin)
     story.append(Spacer(1, 15))
+
+    # Cap Rate Offer Price Matrix (8.0% - 12.0%)
+    cap_matrix = data.get("cap_matrix", {})
+    if cap_matrix:
+        story.append(Paragraph("Offer Price Sensitivity Matrix (8.0% to 12.0% Cap Rate)", h2_style))
+        matrix_rows = [[Paragraph("<b>Target Cap Rate</b>", body_style), Paragraph("<b>Calculated Offer Price</b>", body_style), Paragraph("<b>Variance vs $500k List</b>", body_style)]]
+        for cap_str, offer_val in cap_matrix.items():
+            diff = offer_val - 500000.0
+            diff_str = f"+${diff:,.2f}" if diff >= 0 else f"-${abs(diff):,.2f}"
+            matrix_rows.append([
+                Paragraph(f"<b>{cap_str}</b>", body_style),
+                Paragraph(f"<b>${offer_val:,.2f}</b>", body_style),
+                Paragraph(diff_str, body_style)
+            ])
+        t_matrix = Table(matrix_rows, colWidths=[150, 180, 174])
+        t_matrix.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#1E293B')),
+            ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#CBD5E1')),
+            ('PADDING', (0,0), (-1,-1), 5),
+        ]))
+        story.append(t_matrix)
+        story.append(Spacer(1, 15))
 
     # Subagent Executive Bulletins
     story.append(Paragraph("Subagent Analysis Insights", h2_style))

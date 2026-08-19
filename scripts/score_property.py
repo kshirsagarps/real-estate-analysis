@@ -43,6 +43,16 @@ def calculate_mao(noi: float, target_cap_rate: float, capex_rehab: float = 0.0, 
     mao = valuation - capex_rehab - desired_profit
     return round(max(mao, 0.0), 2)
 
+def generate_cap_rate_offer_matrix(noi: float, start_cap: float = 8.0, end_cap: float = 12.0, step: float = 0.5) -> Dict[str, float]:
+    """Generates offer price matrix for target Cap Rates from start_cap to end_cap."""
+    matrix = {}
+    current_cap = start_cap
+    while current_cap <= end_cap + 0.001:
+        offer_price = calculate_mao(noi, current_cap)
+        matrix[f"{current_cap:.1f}%"] = offer_price
+        current_cap += step
+    return matrix
+
 def get_grade_and_signal(score: float) -> Tuple[str, str]:
     """Return Letter Grade and Investment Signal based on 0-100 score."""
     score = round(score, 1)
