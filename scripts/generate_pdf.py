@@ -259,6 +259,25 @@ def generate_pdf_report(data: Dict[str, Any], output_path: str = "PROPERTY-REPOR
         story.append(t_matrix)
         story.append(Spacer(1, 10))
 
+    # Offer Methodology & Recommended Offer Rationale Section
+    story.append(Paragraph("Offer Price Methodology &amp; Recommendation Rationale", h2_style))
+    methodology_text = [
+        "<b>1. How Offer Prices Were Calculated:</b>",
+        "• <b>Opening Offer ($467,175)</b>: Positions entry at an 11.15% Cap Rate &amp; 17.6% Cash-on-Cash Return, providing maximum downside protection and negotiation leverage.",
+        "• <b>Recommended Offer ($493,129)</b>: Set 5% below your maximum rational ceiling. Delivers an 10.56% Cap Rate, 15.1% Cash-on-Cash Return, and $1,281/mo net cash flow.",
+        "• <b>Max Rational Offer ($519,083)</b>: Solved via multi-constraint optimization as the maximum price satisfying Cap Rate &gt;= 10.0%, CoC &gt;= 12.0%, and DSCR &gt;= 1.25 (20-yr @ 7% loan).",
+        "• <b>Walk-Away Price ($545,037)</b>: Hard threshold. Paying above $545,037 causes Cap Rate to fall below 9.5% and DSCR to approach 1.0 under downside stress.",
+        "<br/>",
+        "<b>2. Rationale for Recommended Offer ($493,129):</b>",
+        "• <b>High Probability of Seller Acceptance</b>: Offering $493,129 is only 1.4% below the $500,000 asking price, making it a compelling, serious offer that sellers are likely to accept.",
+        "• <b>Superior Risk-Adjusted Cash Flow</b>: At $493,129, monthly debt service is $3,058/mo, leaving $1,281/mo net profit in your pocket after all expenses and management fees.",
+        "• <b>Strong Debt Coverage Buffer</b>: Delivers a 1.42 DSCR, ensuring the property remains cash-flow positive even if maintenance or vacancy fluctuate slightly."
+    ]
+    for line in methodology_text:
+        story.append(Paragraph(line, body_style))
+        story.append(Spacer(1, 2))
+    story.append(Spacer(1, 8))
+
     # Subagent Executive Insights Section
     story.append(Paragraph("Subagent Analysis Insights", h2_style))
     insights = data.get("insights", [])
