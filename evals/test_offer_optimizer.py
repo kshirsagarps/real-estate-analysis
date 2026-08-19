@@ -32,8 +32,8 @@ def test_three_value_model_and_offer_bands():
     assert three_vals["investor_max_value"] > 0.0
 
     bands = res["offer_price_bands"]
-    # Aggressive < Recommended < Max Rational <= Market Ceiling
-    assert bands["aggressive_offer"] < bands["recommended_offer"]
+    # Opening Offer < Recommended < Max Rational <= Market Ceiling
+    assert bands["opening_offer"] < bands["recommended_offer"]
     assert bands["recommended_offer"] <= bands["maximum_rational_offer"]
     assert bands["maximum_rational_offer"] <= bands["market_value_ceiling"]
 

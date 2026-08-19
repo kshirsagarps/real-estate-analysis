@@ -128,6 +128,7 @@ class OfferOptimizer:
             "strategy_maos": strategy_maos,
             "offer_price_bands": {
                 "opening_offer": opening_offer,
+                "aggressive_offer": opening_offer,
                 "recommended_offer": recommended_offer,
                 "maximum_rational_offer": max_rational_offer,
                 "walk_away_price": walk_away_price,
