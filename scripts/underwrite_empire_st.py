@@ -34,8 +34,8 @@ def run_empire_underwriting():
     t12_reported_noi = 82171.94
 
     # 2. User & Normalized Assumptions
-    # 2BR unit rented for $1,100/mo adds $13,200/yr to rent base
-    normalized_gpr = 105600.00 # $8,800/mo stabilized rent
+    asking_price = 1000000.00 # Asking Price = $1,000,000 ($1M)
+    normalized_gpr = 105600.00 # $8,800/mo stabilized rent with 2BR rented @ $1,100/mo
     reimbursements = t12_water_sewer_reimb
     late_fees = t12_late_fees
     gpi = normalized_gpr + reimbursements + late_fees # $108,341.42
@@ -60,16 +60,17 @@ def run_empire_underwriting():
 
     normalized_noi = egi - normalized_total_exp # $69,891.89
 
-    # Cap Rate Matrix & Valuations
-    market_cap_8_5 = normalized_noi / 0.085 # $822,257.53
-    target_cap_10_0 = normalized_noi / 0.100 # $698,918.90
-    target_cap_12_0 = normalized_noi / 0.120 # $582,432.42
+    # 4. Debt Service at $1M Asking Price
+    m_debt_1m = calculate_mortgage_payment(800000.0, 7.0, 20) # $6,202.38/mo
+    ann_cf_1m = normalized_noi - (m_debt_1m * 12.0)            # -$4,536.67/yr
+    dscr_1m = normalized_noi / (m_debt_1m * 12.0)              # 0.94
 
     print(f"Property: 2-4 South Empire Street, Wilkes-Barre PA 18702")
-    print(f"T12 Reported NOI (Before Tax/Ins):  ${t12_reported_noi:,.2f}")
-    print(f"Normalized Effective Gross Income:   ${egi:,.2f}")
-    print(f"Normalized Total Expenses:           ${normalized_total_exp:,.2f} (32.1% Expense Ratio)")
-    print(f"NORMALIZED NET OPERATING INCOME:     ${normalized_noi:,.2f}/yr (${normalized_noi/12:,.2f}/mo)")
+    print(f"Asking Price:                        $1,000,000.00")
+    print(f"Cap Rate at $1M Asking Price:        6.99%")
+    print(f"Monthly Debt Service (80% Loan):     ${m_debt_1m:,.2f}/mo (${m_debt_1m*12:,.2f}/yr)")
+    print(f"Levered Monthly Net Cash Flow:       -${abs(ann_cf_1m)/12:,.2f}/mo (DSCR: {dscr_1m:.2f} — NEGATIVE FLOW)")
+    print(f"Normalized Net Operating Income:     ${normalized_noi:,.2f}/yr (${normalized_noi/12:,.2f}/mo)")
     print("-" * 75)
     print("VALUATION & OFFER MATRIX:")
     print(f"  • 8.5% Market Cap Value:            ${market_cap_8_5:,.2f}")
@@ -78,12 +79,12 @@ def run_empire_underwriting():
     print("=" * 75)
 
     # Generate PDF Report
-    score_res = compute_property_score(88, 92, 70, 85, 78)
+    score_res = compute_property_score(55, 62, 70, 75, 78)
     pdf_data = {
         'address': '2-4 South Empire Street, Wilkes-Barre, PA 18702',
         'score': score_res['composite_score'],
         'grade': score_res['grade'],
-        'signal': score_res['signal'],
+        'signal': 'CAUTION / OVERPRICED — $1M asking price produces 6.99% Cap Rate and negative monthly cash flow (-$378/mo).',
         'fmv': market_cap_8_5,
         'mao': target_cap_10_0,
         'breakdown': score_res['breakdown'],
@@ -92,21 +93,19 @@ def run_empire_underwriting():
             'egi': egi,
             'expenses': normalized_total_exp,
             'noi': normalized_noi,
-            'cap_rate': 10.0,
-            'coc_return': 12.53
+            'cap_rate': (normalized_noi / 1000000.0) * 100.0,
+            'coc_return': (ann_cf_1m / 202000.0) * 100.0
         },
         'cap_matrix': {
-            'target_cap_8_0': {'offer_price': normalized_noi / 0.080, 'down_payment': (normalized_noi / 0.080)*0.20, 'monthly_mortgage': calculate_mortgage_payment((normalized_noi / 0.080)*0.80, 7.0, 20), 'annual_cash_flow': normalized_noi - calculate_mortgage_payment((normalized_noi / 0.080)*0.80, 7.0, 20)*12, 'coc_return_pct': 2.73},
+            'asking_price_1m': {'offer_price': 1000000.0, 'down_payment': 200000.0, 'monthly_mortgage': m_debt_1m, 'annual_cash_flow': ann_cf_1m, 'coc_return_pct': -2.25},
             'target_cap_8_5': {'offer_price': market_cap_8_5, 'down_payment': market_cap_8_5*0.20, 'monthly_mortgage': calculate_mortgage_payment(market_cap_8_5*0.80, 7.0, 20), 'annual_cash_flow': normalized_noi - calculate_mortgage_payment(market_cap_8_5*0.80, 7.0, 20)*12, 'coc_return_pct': 5.17},
             'target_cap_10_0': {'offer_price': target_cap_10_0, 'down_payment': target_cap_10_0*0.20, 'monthly_mortgage': calculate_mortgage_payment(target_cap_10_0*0.80, 7.0, 20), 'annual_cash_flow': normalized_noi - calculate_mortgage_payment(target_cap_10_0*0.80, 7.0, 20)*12, 'coc_return_pct': 12.53},
             'target_cap_12_0': {'offer_price': target_cap_12_0, 'down_payment': target_cap_12_0*0.20, 'monthly_mortgage': calculate_mortgage_payment(target_cap_12_0*0.80, 7.0, 20), 'annual_cash_flow': normalized_noi - calculate_mortgage_payment(target_cap_12_0*0.80, 7.0, 20)*12, 'coc_return_pct': 22.33}
         },
         'insights': [
-            f"T12 Rent Roll Analysis: T12 gross rent collected was $100,702. With the vacant 2-bed unit leased at $1,100/mo, Gross Rent reaches $105,600/yr.",
-            f"T12 Expense Audit: T12 operating expenses were $19,523.66 (management $7,049, water/sewer $5,386, gas $1,796, trash $400, maintenance $1,626).",
-            f"Added User Inputs: Fire & Liability Insurance set to $6,800/yr (per user specification). Property tax estimated at $4,500/yr.",
-            f"Normalized Operating NOI: $69,891.89/yr ($5,824.32/mo) after 5% vacancy buffer, 7% management, insurance, estimated taxes, and maintenance reserves.",
-            f"Offer Valuations: 8.5% Market Cap = $822,258 | 10.0% Target Cap MAO = $698,919 | 12.0% Target Cap Offer = $582,432."
+            f"Asking Price Warning: At a $1,000,000 asking price, Cap Rate drops to 6.99%, producing -$378/mo negative cash flow (DSCR 0.94).",
+            f"Normalized Operating NOI: $69,891.89/yr ($5,824.32/mo) after 5% vacancy buffer, 7% management, insurance ($6,800/yr), estimated taxes ($4,500/yr), and maintenance reserves.",
+            f"Recommended Target Offers: 8.5% Market Cap = $822,258 (saves $177k vs asking) | 10.0% Target Cap MAO = $698,919 (saves $301k vs asking) | 12.0% Target Cap Offer = $582,432 (saves $417k vs asking)."
         ]
     }
 
