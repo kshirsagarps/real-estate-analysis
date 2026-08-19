@@ -30,16 +30,21 @@ def run_underwriting():
     vacancy_loss = annual_gpr * 0.05  # $3,695.40 (5%)
     egi = annual_gpr - vacancy_loss   # $70,212.60 / yr
 
-    # Operating Expenses with 2.5% Property Management
+    # Operating Expenses including Landlord Water & Common Electric
     real_estate_taxes = 2676.38       # MLS
-    insurance = 4215.00               # Actual Policy Declaration
+    insurance = 4215.00               # Policy Declaration
     sewer = 880.00                    # MLS
     garbage = 350.00                  # MLS
+    water_landlord = 2400.00          # Landlord Water ($200/mo)
+    common_electric = 600.00          # Common Area Electric ($50/mo)
     property_mgmt = egi * 0.025       # 2.5% PM fee = $1,755.32
     maintenance_reserves = egi * 0.05 # 5% maintenance = $3,510.63
 
-    total_expenses = real_estate_taxes + insurance + sewer + garbage + property_mgmt + maintenance_reserves # $13,387.33
-    noi = calculate_noi(egi, total_expenses) # $56,825.27
+    total_expenses = (
+        real_estate_taxes + insurance + sewer + garbage +
+        water_landlord + common_electric + property_mgmt + maintenance_reserves
+    ) # $16,387.33
+    noi = calculate_noi(egi, total_expenses) # $53,825.27
 
     price = 500000.0
     actual_cap_rate = calculate_cap_rate(noi, price) # 11.37%
