@@ -182,17 +182,38 @@ def generate_pdf_report(data: Dict[str, Any], output_path: str = "PROPERTY-REPOR
     # Cap Rate Offer Price Matrix (8.0% - 12.0%)
     cap_matrix = data.get("cap_matrix", {})
     if cap_matrix:
-        story.append(Paragraph("Offer Price Sensitivity Matrix (8.0% to 12.0% Cap Rate)", h2_style))
-        matrix_rows = [[Paragraph("<b>Target Cap Rate</b>", body_style), Paragraph("<b>Calculated Offer Price</b>", body_style), Paragraph("<b>Variance vs $500k List</b>", body_style)]]
-        for cap_str, offer_val in cap_matrix.items():
-            diff = offer_val - 500000.0
-            diff_str = f"+${diff:,.2f}" if diff >= 0 else f"-${abs(diff):,.2f}"
+        story.append(Paragraph("Offer Price & Levered Cash Flow Matrix (8.0% to 12.0% Cap Rate)", h2_style))
+        matrix_rows = [[
+            Paragraph("<b>Target Cap Rate</b>", body_style),
+            Paragraph("<b>Offer Price</b>", body_style),
+            Paragraph("<b>20% Down</b>", body_style),
+            Paragraph("<b>Monthly Debt</b>", body_style),
+            Paragraph("<b>Net Cash Flow</b>", body_style),
+            Paragraph("<b>CoC Return</b>", body_style)
+        ]]
+        for cap_str, info in cap_matrix.items():
+            if isinstance(info, dict):
+                offer_val = info.get("offer_price", 0.0)
+                down_val = info.get("down_payment", 0.0)
+                m_debt = info.get("monthly_mortgage", 0.0)
+                ann_cf = info.get("annual_cash_flow", 0.0)
+                coc = info.get("coc_return_pct", 0.0)
+            else:
+                offer_val = float(info)
+                down_val = offer_val * 0.20
+                m_debt = (offer_val * 0.80) * 0.007753
+                ann_cf = 56825.27 - (m_debt * 12)
+                coc = (ann_cf / (down_val * 1.01)) * 100
+
             matrix_rows.append([
                 Paragraph(f"<b>{cap_str}</b>", body_style),
-                Paragraph(f"<b>${offer_val:,.2f}</b>", body_style),
-                Paragraph(diff_str, body_style)
+                Paragraph(f"<b>${offer_val:,.0f}</b>", body_style),
+                Paragraph(f"${down_val:,.0f}", body_style),
+                Paragraph(f"${m_debt:,.0f}/mo", body_style),
+                Paragraph(f"${ann_cf:,.0f}/yr", body_style),
+                Paragraph(f"<b>{coc:.1f}%</b>", body_style)
             ])
-        t_matrix = Table(matrix_rows, colWidths=[150, 180, 174])
+        t_matrix = Table(matrix_rows, colWidths=[80, 90, 80, 85, 90, 79])
         t_matrix.setStyle(TableStyle([
             ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#1E293B')),
             ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#CBD5E1')),

@@ -43,13 +43,46 @@ def calculate_mao(noi: float, target_cap_rate: float, capex_rehab: float = 0.0, 
     mao = valuation - capex_rehab - desired_profit
     return round(max(mao, 0.0), 2)
 
-def generate_cap_rate_offer_matrix(noi: float, start_cap: float = 8.0, end_cap: float = 12.0, step: float = 0.5) -> Dict[str, float]:
-    """Generates offer price matrix for target Cap Rates from start_cap to end_cap."""
+def calculate_mortgage_payment(loan_amount: float, interest_rate_pct: float = 7.0, loan_years: int = 20) -> float:
+    """Calculates monthly mortgage payment (P&I)."""
+    if loan_amount <= 0 or interest_rate_pct <= 0 or loan_years <= 0:
+        return 0.0
+    monthly_rate = (interest_rate_pct / 100.0) / 12.0
+    total_months = loan_years * 12
+    monthly_payment = loan_amount * (monthly_rate * (1 + monthly_rate) ** total_months) / ((1 + monthly_rate) ** total_months - 1)
+    return round(monthly_payment, 2)
+
+def generate_cap_rate_offer_matrix(
+    noi: float,
+    start_cap: float = 8.0,
+    end_cap: float = 12.0,
+    step: float = 0.5,
+    down_payment_pct: float = 20.0,
+    interest_rate_pct: float = 7.0,
+    loan_years: int = 20
+) -> Dict[str, Dict[str, float]]:
+    """Generates detailed offer price matrix with debt service and levered cash flow."""
     matrix = {}
     current_cap = start_cap
     while current_cap <= end_cap + 0.001:
         offer_price = calculate_mao(noi, current_cap)
-        matrix[f"{current_cap:.1f}%"] = offer_price
+        down_payment = offer_price * (down_payment_pct / 100.0)
+        loan_amount = offer_price - down_payment
+        monthly_mortgage = calculate_mortgage_payment(loan_amount, interest_rate_pct, loan_years)
+        annual_debt_service = monthly_mortgage * 12.0
+        annual_cash_flow = noi - annual_debt_service
+        total_initial_cash = down_payment + (offer_price * 0.01) # 1% closing costs
+        coc_return = calculate_cash_on_cash(annual_cash_flow, total_initial_cash)
+        
+        matrix[f"{current_cap:.1f}%"] = {
+            "offer_price": offer_price,
+            "down_payment": round(down_payment, 2),
+            "loan_amount": round(loan_amount, 2),
+            "monthly_mortgage": monthly_mortgage,
+            "annual_debt_service": round(annual_debt_service, 2),
+            "annual_cash_flow": round(annual_cash_flow, 2),
+            "coc_return_pct": coc_return
+        }
         current_cap += step
     return matrix
 
