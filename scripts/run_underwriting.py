@@ -55,12 +55,13 @@ def run_underwriting():
     t12_res = auditor.audit_and_normalize(
         raw_t12,
         purchase_price=500000.0,
-        tax_reassessment_rate=0.015,
+        tax_reassessment_rate=0.0, # Per user instruction: current tax $2,676.38 stays unchanged
+        capex_reserve_per_unit=0.0, # Per user instruction: no CapEx reserves added
         unit_count=canonical_unit_count,
         landlord_water_annual=2400.0,
         landlord_common_electric_annual=600.0
     )
-    normalized_noi = t12_res["normalized_noi"] # $44,825.27
+    normalized_noi = t12_res["normalized_noi"] # $53,825.27
 
     # 3. Comp Eligibility Funnel, Similarity Scoring & Dispersion
     comp_engine = CompEngine()
