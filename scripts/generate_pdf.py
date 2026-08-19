@@ -215,27 +215,26 @@ def generate_pdf_report(data: Dict[str, Any], output_path: str = "PROPERTY-REPOR
             Paragraph("CoC Return", table_header_style)
         ]]
 
-        seen_keys = set()
-        for key, info in cap_matrix.items():
-            if key in seen_keys or key == "aggressive_offer":
-                continue
-            seen_keys.add(key)
-            
-            label = band_labels.get(key, key.replace("_", " ").title())
-            
-            if isinstance(info, dict):
-                offer_val = info.get("offer_price", 0.0)
-                down_val = info.get("down_payment", 0.0)
-                m_debt = info.get("monthly_mortgage", 0.0)
-                ann_cf = info.get("annual_cash_flow", 0.0)
-                coc = info.get("coc_return_pct", 0.0)
-            else:
-                offer_val = float(info)
-                down_val = offer_val * 0.20
-                m_debt = (offer_val * 0.80) * 0.007753
-                ann_cf = fin_noi - (m_debt * 12)
-                coc = (ann_cf / (down_val * 1.01)) * 100.0 if down_val > 0 else 0.0
+        # 8.0% to 12.0% Cap Rate Offer Matrix
+        cap_matrix_data = [
+            ("8.0% Cap Rate", fin_noi / 0.080),
+            ("8.5% Cap Rate", fin_noi / 0.085),
+            ("9.0% Cap Rate", fin_noi / 0.090),
+            ("9.5% Cap Rate", fin_noi / 0.095),
+            ("10.0% Cap Rate", fin_noi / 0.100),
+            ("10.5% Cap Rate", fin_noi / 0.105),
+            ("10.77% Asking Price", 500000.0),
+            ("11.0% Cap Rate", fin_noi / 0.110),
+            ("11.5% Cap Rate", fin_noi / 0.115),
+            ("12.0% Cap Rate", fin_noi / 0.120),
+        ]
 
+        seen_keys = set()
+        for label, offer_val in cap_matrix_data:
+            down_val = offer_val * 0.20
+            m_debt = (offer_val * 0.80) * 0.007753
+            ann_cf = fin_noi - (m_debt * 12.0)
+            coc = (ann_cf / (down_val * 1.01)) * 100.0 if down_val > 0 else 0.0
             implied_cap = (fin_noi / offer_val * 100.0) if offer_val > 0 else 0.0
 
             matrix_rows.append([
@@ -248,12 +247,12 @@ def generate_pdf_report(data: Dict[str, Any], output_path: str = "PROPERTY-REPOR
                 Paragraph(f"<b>{coc:.1f}%</b>", body_style)
             ])
 
-        t_matrix = Table(matrix_rows, colWidths=[104, 70, 60, 65, 75, 70, 60])
+        t_matrix = Table(matrix_rows, colWidths=[114, 68, 55, 65, 75, 70, 57])
         t_matrix.setStyle(TableStyle([
             ('BACKGROUND', (0,0), (-1,0), colors.black),
             ('TEXTCOLOR', (0,0), (-1,0), colors.white),
             ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#CBD5E1')),
-            ('PADDING', (0,0), (-1,-1), 5),
+            ('PADDING', (0,0), (-1,-1), 4),
             ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
         ]))
         story.append(t_matrix)
