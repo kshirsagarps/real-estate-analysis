@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
-EVALS Test Suite Runner
+Master EVALS Test Suite Runner
 
 Runs pytest evaluation suites across underwriting math, T12 parsing, 
-scoring engine bounds, and memory engine persistence. Outputs formatted scorecard.
+comp eligibility funnel, similarity scoring, valuation dispersion, 
+fact reconciliation, 4-tier provenance, stress testing, and offer price bands.
 """
 
 import sys
@@ -11,9 +12,9 @@ import subprocess
 import os
 
 def run_all_evals():
-    print("=" * 60)
-    print("  RUNNING AI REAL ESTATE ENGINE EVALUATION SUITE (EVALS)")
-    print("=" * 60)
+    print("=" * 70)
+    print("  RUNNING INDUSTRIAL-GRADE REAL ESTATE EVALUATION SUITE (EVALS)")
+    print("=" * 70)
     
     evals_dir = os.path.dirname(__file__)
     cmd = [sys.executable, "-m", "pytest", evals_dir, "-v", "--tb=short"]
@@ -24,12 +25,12 @@ def run_all_evals():
     if result.stderr:
         print(result.stderr)
 
-    print("=" * 60)
+    print("=" * 70)
     if result.returncode == 0:
         print("  EVALS RESULT: PASSED ALL BENCHMARK TESTS ✅")
     else:
         print("  EVALS RESULT: FAILED ONE OR MORE BENCHMARKS ❌")
-    print("=" * 60)
+    print("=" * 70)
     
     sys.exit(result.returncode)
 

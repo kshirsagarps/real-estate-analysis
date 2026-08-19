@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
 """
-Deterministic Comp Eligibility, Similarity Scoring, and Valuation Engine
+Deterministic Comp Eligibility, Similarity Scoring, Valuation Dispersion, and Trimmed FMV Engine
 
 Implements:
 1. Comp Eligibility Funnel (Property Type & Unit Count Tiering)
 2. Comp Similarity Score (0-100)
-3. Outlier Exclusions (Distressed/Foreclosure/PPSF outliers)
-4. Local Time Adjustments
-5. Weighted Sales Comp FMV Calculation
+3. Outlier Exclusions (Distressed/Foreclosure/Extreme PPSF outliers)
+4. Valuation Dispersion & Coefficient of Variation (CV)
+5. Weighted Trimmed-Mean Sales Comp Valuation
+6. Low Comp Count Safeguard (<3 primary comps trigger MANUAL COMP REVIEW REQUIRED)
 """
 
+import math
 from typing import Dict, Any, List, Tuple
 
 class CompEngine:
@@ -19,7 +21,6 @@ class CompEngine:
     def evaluate_comp_eligibility(self, subject: Dict[str, Any], comp: Dict[str, Any]) -> Tuple[str, float, str]:
         """
         Evaluates Comp Eligibility Tier (Primary, Secondary, Fallback, Excluded).
-        Returns: (Tier_Name, Tier_Penalty, Reason)
         """
         subj_type = subject.get("property_type", "multi_family").lower()
         comp_type = comp.get("property_type", "multi_family").lower()
@@ -50,48 +51,39 @@ class CompEngine:
         comp: Dict[str, Any],
         tier_weight: float
     ) -> float:
-        """
-        Calculates Comp Similarity Score (0-100).
-        Weights: 30% Type, 20% Unit Count, 15% Distance, 10% Recency, 10% SF, 5% Year, 5% Condition, 5% Location.
-        """
-        # Distance score (15%)
+        """Calculates Comp Similarity Score (0-100)."""
         dist_miles = float(comp.get("distance_miles", 1.0))
         dist_score = max(0.0, 100.0 - (dist_miles * 30.0))
 
-        # Recency score (10%)
         days_ago = int(comp.get("days_since_sale", 60))
         recency_score = max(0.0, 100.0 - (days_ago / 3.65))
 
-        # Square Footage similarity (10%)
         subj_sf = float(subject.get("building_sf", 4000))
         comp_sf = float(comp.get("building_sf", 4000))
         sf_diff_pct = abs(subj_sf - comp_sf) / max(subj_sf, 1.0)
         sf_score = max(0.0, 100.0 - (sf_diff_pct * 200.0))
 
-        # Year built similarity (5%)
         subj_year = int(subject.get("year_built", 1950))
         comp_year = int(comp.get("year_built", 1950))
         year_diff = abs(subj_year - comp_year)
         year_score = max(0.0, 100.0 - (year_diff * 2.5))
 
-        # Base type & unit match score (50%)
         base_match = tier_weight * 100.0
 
-        # Weighted Composite Similarity Score
         similarity_score = (
             (base_match * 0.50) +
             (dist_score * 0.15) +
             (recency_score * 0.10) +
             (sf_score * 0.10) +
             (year_score * 0.05) +
-            (90.0 * 0.05) + # Condition score
-            (90.0 * 0.05)   # Location score
+            (90.0 * 0.05) +
+            (90.0 * 0.05)
         )
 
         return round(max(0.0, min(100.0, similarity_score)), 1)
 
     def is_outlier(self, comp: Dict[str, Any], median_ppsf: float) -> Tuple[bool, str]:
-        """Detects whether a comp is an outlier (distressed, non-arm's-length, extreme PPSF)."""
+        """Detects whether a comp is an outlier."""
         is_distressed = comp.get("is_distressed", False) or comp.get("is_foreclosure", False)
         if is_distressed:
             return (True, "Excluded: Foreclosure / Distressed Transaction")
@@ -114,18 +106,35 @@ class CompEngine:
         adjusted_price = sale_price * (1.0 + (annual_trend_rate * years_ago))
         return round(adjusted_price, 2)
 
+    def calculate_valuation_dispersion(self, prices: List[float]) -> Tuple[float, float]:
+        """Calculates Standard Deviation, Coefficient of Variation (CV), and Interquartile Range (IQR)."""
+        if not prices or len(prices) < 2:
+            return 0.0, 0.0
+        
+        mean_val = sum(prices) / len(prices)
+        variance = sum((p - mean_val) ** 2 for p in prices) / len(prices)
+        std_dev = math.sqrt(variance)
+        cv = std_dev / max(mean_val, 1.0)
+
+        sorted_prices = sorted(prices)
+        n = len(sorted_prices)
+        q1 = sorted_prices[n // 4]
+        q3 = sorted_prices[(3 * n) // 4]
+        iqr = q3 - q1
+
+        return round(cv, 3), round(iqr, 2)
+
     def calculate_sales_comp_fmv(self, subject: Dict[str, Any], raw_comps: List[Dict[str, Any]], annual_trend_rate: float = -0.032) -> Dict[str, Any]:
         """
-        Runs the complete Comp Eligibility Funnel, Time Adjustment, Outlier Exclusion, 
-        and Weighted Sales Comp Valuation.
+        Runs the complete Comp Eligibility Funnel, Time Adjustment, Outlier Exclusion,
+        Valuation Dispersion Analysis, and Trimmed-Mean Weighted FMV.
         """
-        # Calculate median PPSF for outlier detection
         ppsfs = [c["sale_price"] / max(float(c.get("building_sf", 1)), 1.0) for c in raw_comps if c.get("sale_price", 0) > 0]
         median_ppsf = sorted(ppsfs)[len(ppsfs)//2] if ppsfs else 0.0
 
         evaluated_comps = []
-        total_weighted_value = 0.0
-        total_weight = 0.0
+        valid_prices = []
+        valid_weights = []
         primary_count = 0
         fallback_count = 0
 
@@ -144,15 +153,12 @@ class CompEngine:
                 evaluated_comps.append(c_copy)
                 continue
 
-            # Time Adjustment
             adj_price = self.time_adjust_sale_price(c["sale_price"], c.get("days_since_sale", 0), annual_trend_rate)
             similarity_score = self.calculate_comp_similarity_score(subject, c, tier_weight)
-
-            # Weight calculation
             weight = (similarity_score / 100.0) * tier_weight
 
-            total_weighted_value += (adj_price * weight)
-            total_weight += weight
+            valid_prices.append(adj_price)
+            valid_weights.append(weight)
 
             if "Primary" in tier_name:
                 primary_count += 1
@@ -170,25 +176,47 @@ class CompEngine:
             })
             evaluated_comps.append(c_copy)
 
-        sales_comp_fmv = (total_weighted_value / total_weight) if total_weight > 0 else 0.0
+        # Dispersion Analysis
+        cv, iqr = self.calculate_valuation_dispersion(valid_prices)
+
+        # Low Comp Safeguard Check
+        requires_manual_review = primary_count < 3
+        safeguard_warning = "MANUAL COMP REVIEW REQUIRED: Fewer than 3 primary comps available." if requires_manual_review else "Comp count sufficient."
+
+        # Trimmed Weighted Mean calculation
+        if len(valid_prices) >= 4:
+            # Sort prices & weights by price, trim top and bottom 10%
+            pairs = sorted(zip(valid_prices, valid_weights), key=lambda x: x[0])
+            trim_n = max(1, len(pairs) // 5)
+            trimmed_pairs = pairs[trim_n:-trim_n] if len(pairs) > (2 * trim_n) else pairs
+            total_weighted_val = sum(p * w for p, w in trimmed_pairs)
+            total_w = sum(w for p, w in trimmed_pairs)
+        else:
+            total_weighted_val = sum(p * w for p, w in zip(valid_prices, valid_weights))
+            total_w = sum(valid_weights)
+
+        sales_comp_fmv = (total_weighted_val / total_w) if total_w > 0 else 0.0
 
         return {
             "sales_comp_fmv": round(sales_comp_fmv, 2),
             "primary_comps_count": primary_count,
             "fallback_comps_count": fallback_count,
+            "valuation_dispersion_cv": cv,
+            "iqr": iqr,
+            "requires_manual_review": requires_manual_review,
+            "safeguard_warning": safeguard_warning,
             "evaluated_comps": evaluated_comps
         }
 
 if __name__ == "__main__":
     engine = CompEngine()
-    subject = {"property_type": "multi_family", "unit_count": 5, "building_sf": 4740, "year_built": 1930}
-    comps = [
-        {"address": "Comp 1 (5-unit)", "property_type": "multi_family", "unit_count": 5, "sale_price": 520000, "building_sf": 4800, "days_since_sale": 30, "distance_miles": 0.3},
-        {"address": "Comp 2 (4-unit)", "property_type": "multi_family", "unit_count": 4, "sale_price": 480000, "building_sf": 4200, "days_since_sale": 90, "distance_miles": 0.5},
-        {"address": "Comp 3 (SFH)", "property_type": "single_family", "unit_count": 1, "sale_price": 250000, "building_sf": 1800, "days_since_sale": 10, "distance_miles": 0.2}, # Should be excluded
-        {"address": "Comp 4 (Foreclosure)", "property_type": "multi_family", "unit_count": 5, "sale_price": 180000, "building_sf": 4700, "days_since_sale": 40, "distance_miles": 0.4, "is_foreclosure": True} # Outlier
+    subject = {"property_type": "multi_family", "unit_count": 5, "building_sf": 5194}
+    raw_comps = [
+        {"address": "Comp 1", "property_type": "multi_family", "unit_count": 5, "sale_price": 540000, "building_sf": 5000, "days_since_sale": 30},
+        {"address": "Comp 2", "property_type": "multi_family", "unit_count": 4, "sale_price": 495000, "building_sf": 4400, "days_since_sale": 60},
+        {"address": "Comp 3", "property_type": "multi_family", "unit_count": 5, "sale_price": 525000, "building_sf": 5100, "days_since_sale": 120}
     ]
-    res = engine.calculate_sales_comp_fmv(subject, comps)
-    print("Comp Engine Valuation Test:")
+    res = engine.calculate_sales_comp_fmv(subject, raw_comps)
+    print("Comp Engine Test:")
     import json
     print(json.dumps(res, indent=2))
